@@ -1,11 +1,16 @@
 import mongoose, { Schema } from 'mongoose';
-import { IUser } from './user';
+
+type User = {
+  name: string;
+  about: string;
+  avatar: string;
+}
 
 interface ICard {
   name: string;
   link: string;
-  owner: IUser;
-  likes: Array<IUser>;
+  owner: User;
+  likes: Array<User>;
   createdAt: Date
 }
 
