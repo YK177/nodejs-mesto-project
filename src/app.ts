@@ -1,17 +1,25 @@
 import express from 'express';
 import mongoose from 'mongoose';
-import userRouter from './routes/user';
+import router from './routes';
 
-const { PORT = 3000 } = process.env;
+const { PORT = 3000, MONGO_URL = 'mongodb://127.0.0.1:27017/mydb' } = process.env;
 
 const app = express();
 
-mongoose.connect('mongodb://localhost:27017/mydb');
-
 app.use(express.json());
-app.use('/users', userRouter);
 
-app.listen(PORT, () => {
-  // Если всё работает, консоль покажет, какой порт приложение слушает
-  console.log(`App listening on port ${PORT}`);
-});
+app.use(router);
+
+const connect = async () => {
+  try {
+    await mongoose.connect(MONGO_URL);
+    console.log('Соединение с базой установлено');
+
+    await app.listen(PORT);
+    console.log('Сервер запущен на порту:', PORT);
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+connect();

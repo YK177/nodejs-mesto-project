@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import User from '../models/user';
 
-export const getUsers = (req:Request, res:Response) => User.find({})
+export const getUsers = (_req:Request, res:Response) => User.find({})
   .then((users) => res.send(users));
 
 export const getUserById = (req:Request, res:Response) => {
