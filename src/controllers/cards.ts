@@ -5,8 +5,8 @@ export const getCards = (_req:Request, res:Response) => Card.find({})
   .then((cards) => res.send(cards));
 
 export const createCard = (req:Request, res:Response) => {
-  const { name, link } = req.body;
   const owner = res.locals.user;
+  const { name, link } = req.body;
 
   Card.create({ name, link, owner })
     .then((card) => res.send(card));

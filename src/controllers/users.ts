@@ -13,6 +13,25 @@ export const getUserById = (req:Request, res:Response) => {
 export const createUser = (req:Request, res:Response) => {
   const { name, about, avatar } = req.body;
 
-  User.create({ name, about, avatar })
+  User
+    .create({ name, about, avatar })
+    .then((user) => res.send(user));
+};
+
+export const updateProfile = (req:Request, res:Response) => {
+  const userId = res.locals.user;
+  const { name, about } = req.body;
+
+  User
+    .findByIdAndUpdate(userId, { name, about }, { new: true, runValidators: true })
+    .then((user) => res.send(user));
+};
+
+export const updateAvatar = (req:Request, res:Response) => {
+  const userId = res.locals.user;
+  const { avatar } = req.body;
+
+  User
+    .findByIdAndUpdate(userId, { avatar }, { new: true, runValidators: true })
     .then((user) => res.send(user));
 };
