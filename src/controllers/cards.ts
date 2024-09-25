@@ -15,5 +15,23 @@ export const createCard = (req:Request, res:Response) => {
 export const deleteCard = (req:Request, res:Response) => {
   const { cardId } = req.params;
 
-  return Card.findByIdAndDelete({ _id: cardId }).then((card) => res.send(card));
+  Card.findByIdAndDelete({ _id: cardId }).then((card) => res.send(card));
+};
+
+export const likeCard = (req:Request, res:Response) => {
+  const userId = res.locals.user;
+  const { cardId } = req.params;
+
+  Card
+    .findByIdAndUpdate(cardId, { $addToSet: { likes: userId } }, { new: true })
+    .then((card) => res.send(card));
+};
+
+export const dislikeCard = (req:Request, res:Response) => {
+  const userId = res.locals.user;
+  const { cardId } = req.params;
+
+  Card
+    .findByIdAndUpdate(cardId, { $pull: { likes: userId } }, { new: true })
+    .then((card) => res.send(card));
 };

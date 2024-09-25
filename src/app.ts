@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 import router from './routes';
 import type { AuthContext } from './types/auth';
 
-const AUTH_MOCK_USER_ID = '6682fa365621ae853cc579fc';
+const AUTH_MOCK_USER_ID = '66f1b23e747ec15f21dbe300';
 const { PORT = 3000, MONGO_URL = 'mongodb://127.0.0.1:27017/mydb' } = process.env;
 
 const app = express();
