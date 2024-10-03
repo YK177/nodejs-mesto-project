@@ -3,6 +3,7 @@ import type { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import router from './routes';
 import type { AuthContext } from './types/auth';
+import errorHandler from './middleware/error-handler';
 
 const AUTH_MOCK_USER_ID = '66f1b23e747ec15f21dbe300';
 const { PORT = 3000, MONGO_URL = 'mongodb://127.0.0.1:27017/mydb' } = process.env;
@@ -20,6 +21,7 @@ app.use((_req: Request, res: Response<unknown, AuthContext>, next: NextFunction)
 });
 
 app.use(router);
+app.use(errorHandler);
 
 const connect = async () => {
   try {
