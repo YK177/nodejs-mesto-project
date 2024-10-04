@@ -26,7 +26,7 @@ const userSchema = new Schema<IUser>({
       validator: (v: string) => isURL(v),
       message: 'Некорректный URL',
     },
-    required: true,
+    required: [true, 'Поле "avatar" должно быть заполнено'],
   },
 }, { versionKey: false });
 
