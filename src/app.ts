@@ -1,6 +1,7 @@
 import express from 'express';
 import type { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
+import helmet from 'helmet';
 import router from './routes';
 import type { AuthContext } from './types/auth';
 import errorHandler from './middleware/error-handler';
@@ -11,6 +12,7 @@ const { PORT = 3000, MONGO_URL = 'mongodb://127.0.0.1:27017/mydb' } = process.en
 const app = express();
 
 app.use(express.json());
+app.use(helmet());
 
 app.use((_req: Request, res: Response<unknown, AuthContext>, next: NextFunction) => {
   res.locals.user = {
