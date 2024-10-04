@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { Error as MongooseError } from 'mongoose';
+import { constants } from 'http2';
 import Card from '../models/card';
 import { AuthContext } from '../types/auth';
 import BadRequestError from '../errors/bad-request-error';
@@ -19,7 +20,7 @@ export const createCard = (req:Request, res:Response<unknown, AuthContext>, next
   const { name, link } = req.body;
 
   Card.create({ name, link, owner })
-    .then((card) => res.send(card))
+    .then((card) => res.status(constants.HTTP_STATUS_CREATED).send(card))
     .catch((error) => {
       if (error instanceof MongooseError.ValidationError) {
         return next(new BadRequestError(INVALID_CARD_DATA_MESSAGE));
@@ -32,10 +33,14 @@ export const deleteCard = (req:Request, res:Response, next: NextFunction) => {
   const { cardId } = req.params;
 
   Card.findByIdAndDelete({ _id: cardId })
+    .orFail()
     .then((card) => res.send(card))
     .catch((error) => {
-      if (error instanceof MongooseError.CastError) {
+      if (error instanceof MongooseError.DocumentNotFoundError) {
         return next(new NotFoundError(CARD_NOT_FOUND_MESSAGE));
+      }
+      if (error instanceof MongooseError.CastError) {
+        return next(new BadRequestError(error.message));
       }
       return next(error);
     });
@@ -47,10 +52,14 @@ export const likeCard = (req:Request, res:Response<unknown, AuthContext>, next: 
 
   Card
     .findByIdAndUpdate(cardId, { $addToSet: { likes: user } }, { new: true })
+    .orFail()
     .then((card) => res.send(card))
     .catch((error) => {
-      if (error instanceof MongooseError.CastError) {
+      if (error instanceof MongooseError.DocumentNotFoundError) {
         return next(new NotFoundError(UNLISTED_CARD_ID_MESSAGE));
+      }
+      if (error instanceof MongooseError.CastError) {
+        return next(new BadRequestError(error.message));
       }
       if (error instanceof MongooseError.ValidationError) {
         return next(new BadRequestError(INVALID_LIKE_DATA_MESSAGE));
@@ -69,10 +78,14 @@ export const dislikeCard = (
 
   Card
     .findByIdAndUpdate(cardId, { $pull: { likes: user._id } }, { new: true })
+    .orFail()
     .then((card) => res.send(card))
     .catch((error) => {
-      if (error instanceof MongooseError.CastError) {
+      if (error instanceof MongooseError.DocumentNotFoundError) {
         return next(new NotFoundError(UNLISTED_CARD_ID_MESSAGE));
+      }
+      if (error instanceof MongooseError.CastError) {
+        return next(new BadRequestError(error.message));
       }
       if (error instanceof MongooseError.ValidationError) {
         return next(new BadRequestError(INVALID_LIKE_DATA_MESSAGE));

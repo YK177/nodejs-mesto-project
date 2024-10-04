@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { Error as MongooseError } from 'mongoose';
+import { constants } from 'http2';
 import User from '../models/user';
 import NotFoundError from '../errors/not-found-error';
 import BadRequestError from '../errors/bad-request-error';
@@ -14,11 +15,15 @@ export const getUsers = (_req:Request, res:Response, next: NextFunction) => User
 export const getUserById = (req:Request, res:Response, next: NextFunction) => {
   const { userId } = req.params;
 
-  return User.findOne({ _id: userId })
+  User.findOne({ _id: userId })
+    .orFail()
     .then((user) => res.send(user))
     .catch((error) => {
-      if (error instanceof MongooseError.CastError) {
+      if (error instanceof MongooseError.DocumentNotFoundError) {
         return next(new NotFoundError(USER_NOT_FOUND_MESSAGE));
+      }
+      if (error instanceof MongooseError.CastError) {
+        return next(new BadRequestError(error.message));
       }
       return next(error);
     });
@@ -29,7 +34,7 @@ export const createUser = (req:Request, res:Response, next: NextFunction) => {
 
   User
     .create({ name, about, avatar })
-    .then((user) => res.send(user))
+    .then((user) => res.status(constants.HTTP_STATUS_CREATED).send(user))
     .catch((error) => {
       if (error instanceof MongooseError.ValidationError) {
         return next(new BadRequestError(INVALID_USER_DATA_MESSAGE));
@@ -44,10 +49,14 @@ export const updateProfile = (req:Request, res:Response, next: NextFunction) => 
 
   User
     .findByIdAndUpdate(userId, { name, about }, { new: true, runValidators: true })
+    .orFail()
     .then((user) => res.send(user))
     .catch((error) => {
-      if (error instanceof MongooseError.CastError) {
+      if (error instanceof MongooseError.DocumentNotFoundError) {
         return next(new NotFoundError(USER_NOT_FOUND_MESSAGE));
+      }
+      if (error instanceof MongooseError.CastError) {
+        return next(new BadRequestError(error.message));
       }
       if (error instanceof MongooseError.ValidationError) {
         return next(new BadRequestError(INVALID_USER_DATA_MESSAGE));
@@ -62,10 +71,14 @@ export const updateAvatar = (req:Request, res:Response, next: NextFunction) => {
 
   User
     .findByIdAndUpdate(userId, { avatar }, { new: true, runValidators: true })
+    .orFail()
     .then((user) => res.send(user))
     .catch((error) => {
-      if (error instanceof MongooseError.CastError) {
+      if (error instanceof MongooseError.DocumentNotFoundError) {
         return next(new NotFoundError(USER_NOT_FOUND_MESSAGE));
+      }
+      if (error instanceof MongooseError.CastError) {
+        return next(new BadRequestError(error.message));
       }
       if (error instanceof MongooseError.ValidationError) {
         return next(new BadRequestError(INVALID_USER_DATA_MESSAGE));
