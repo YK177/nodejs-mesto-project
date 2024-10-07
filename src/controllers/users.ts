@@ -1,12 +1,38 @@
 import { NextFunction, Request, Response } from 'express';
 import { Error as MongooseError } from 'mongoose';
+import bcrypt from 'bcrypt';
 import { constants } from 'http2';
-import User from '../models/user';
+import jwt from 'jsonwebtoken';
+import User, { CREDENTIALS_ERROR, IUser } from '../models/user';
 import NotFoundError from '../errors/not-found-error';
 import BadRequestError from '../errors/bad-request-error';
+import UnauthorizedError from '../errors/unauthorized-error';
 
 const USER_NOT_FOUND_MESSAGE = 'Пользователь по указанному _id не найден.';
 const INVALID_USER_DATA_MESSAGE = 'Переданы некорректные данные при создании пользователя.';
+const SALT_ROUNDS = 10;
+const { SECRET_KEY = 'some-secret-key', TOKEN_EXPIRES_IN = '7d', COOKIE_EXPIRES_IN = 604800000 } = process.env;
+
+export const login = (req:Request<{}, {}, IUser>, res:Response, next: NextFunction) => {
+  const { email, password } = req.body;
+
+  User.findUserByCredentials(email, password)
+    .then((user) => {
+      const token = jwt.sign({ _id: user._id }, SECRET_KEY, { expiresIn: TOKEN_EXPIRES_IN });
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: true,
+        maxAge: +COOKIE_EXPIRES_IN,
+      });
+      res.send(user);
+    })
+    .catch((error) => {
+      if (error.message === CREDENTIALS_ERROR) {
+        return next(new UnauthorizedError(CREDENTIALS_ERROR));
+      }
+      return next(error);
+    });
+};
 
 export const getUsers = (_req:Request, res:Response, next: NextFunction) => User.find({})
   .then((users) => res.send(users))
@@ -29,12 +55,20 @@ export const getUserById = (req:Request, res:Response, next: NextFunction) => {
     });
 };
 
-export const createUser = (req:Request, res:Response, next: NextFunction) => {
-  const { name, about, avatar } = req.body;
+export const createUser = async (req:Request<{}, {}, IUser>, res:Response, next: NextFunction) => {
+  const {
+    name, about, avatar, email, password,
+  } = req.body;
+
+  const hash = await bcrypt.hash(password, SALT_ROUNDS);
 
   User
-    .create({ name, about, avatar })
-    .then((user) => res.status(constants.HTTP_STATUS_CREATED).send(user))
+    .create({
+      name, about, avatar, email, password: hash,
+    })
+    .then((user) => {
+      res.status(constants.HTTP_STATUS_CREATED).send(user);
+    })
     .catch((error) => {
       if (error instanceof MongooseError.ValidationError) {
         return next(new BadRequestError(INVALID_USER_DATA_MESSAGE));

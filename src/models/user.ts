@@ -1,24 +1,48 @@
-import mongoose, { Schema } from 'mongoose';
-import { isURL } from 'validator';
+import mongoose, { Model, Schema, Document } from 'mongoose';
+import { isEmail, isURL } from 'validator';
+import bcrypt from 'bcrypt';
 
-interface IUser {
+export const CREDENTIALS_ERROR = 'Неправильные почта или пароль';
+
+export interface IUser {
   name: string;
+  email: string,
+  password: string,
   about: string;
   avatar: string;
 }
 
-const userSchema = new Schema<IUser>({
+interface IUserDocument extends Document, IUser {}
+interface IUserModel extends Model<IUserDocument> {
+  findUserByCredentials(_email: string, _password: string): Promise<IUserDocument>;
+}
+
+const userSchema = new Schema<IUserDocument>({
   name: {
     type: String,
-    required: [true, 'Поле "name" должно быть заполнено'],
     minlength: [2, 'Минимальная длина поля "name" - 2'],
     maxlength: [30, 'Максимальная длина поля "name" - 30'],
+    default: 'Жак-Ив Кусто',
+  },
+  email: {
+    type: String,
+    validate: {
+      validator: (v: string) => isEmail(v),
+      message: 'Некорректный email',
+    },
+    required: [true, 'Поле "email" должно быть заполнено'],
+    unique: true,
+  },
+  password: {
+    type: String,
+    required: [true, 'Поле "password" должно быть заполнено'],
+    select: false,
   },
   about: {
     type: String,
-    required: [true, 'Поле "about" должно быть заполнено'],
     minlength: [2, 'Минимальная длина поля "name" - 2'],
     maxlength: [200, 'Максимальная длина поля "name" - 200'],
+    default: 'Исследователь',
   },
   avatar: {
     type: String,
@@ -26,8 +50,26 @@ const userSchema = new Schema<IUser>({
       validator: (v: string) => isURL(v),
       message: 'Некорректный URL',
     },
-    required: [true, 'Поле "avatar" должно быть заполнено'],
+    default: 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
   },
 }, { versionKey: false });
 
-export default mongoose.model<IUser>('user', userSchema);
+userSchema.static('findUserByCredentials', async function findUserByCredentials(email: string, password: string) {
+  return this.findOne({ email })
+    .then((user: IUser) => {
+      if (!user) {
+        return Promise.reject(new Error(CREDENTIALS_ERROR));
+      }
+
+      return bcrypt.compare(password, user.password)
+        .then((matched) => {
+          if (!matched) {
+            return Promise.reject(new Error(CREDENTIALS_ERROR));
+          }
+
+          return user;
+        });
+    });
+});
+
+export default mongoose.model<IUserDocument, IUserModel>('user', userSchema);

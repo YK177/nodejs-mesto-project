@@ -1,27 +1,20 @@
 import express from 'express';
-import type { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import helmet from 'helmet';
 import router from './routes';
-import type { AuthContext } from './types/auth';
 import errorHandler from './middleware/error-handler';
+import { createUser, login } from './controllers/users';
+import auth from './middleware/auth';
 
-const AUTH_MOCK_USER_ID = '66f1b23e747ec15f21dbe300';
 const { PORT = 3000, MONGO_URL = 'mongodb://127.0.0.1:27017/mydb' } = process.env;
 
 const app = express();
 
 app.use(express.json());
 app.use(helmet());
-
-app.use((_req: Request, res: Response<unknown, AuthContext>, next: NextFunction) => {
-  res.locals.user = {
-    _id: AUTH_MOCK_USER_ID,
-  };
-
-  next();
-});
-
+app.post('/signup', createUser);
+app.post('/signin', login);
+app.use(auth);
 app.use(router);
 app.use(errorHandler);
 
