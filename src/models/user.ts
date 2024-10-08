@@ -1,8 +1,9 @@
 import mongoose, { Model, Schema, Document } from 'mongoose';
 import { isEmail, isURL } from 'validator';
 import bcrypt from 'bcrypt';
+import UnauthorizedError from '../errors/unauthorized-error';
 
-export const CREDENTIALS_ERROR = 'Неправильные почта или пароль';
+const CREDENTIALS_ERROR = 'Неправильные почта или пароль';
 
 export interface IUser {
   name: string;
@@ -58,13 +59,13 @@ userSchema.static('findUserByCredentials', async function findUserByCredentials(
   return this.findOne({ email })
     .then((user: IUser) => {
       if (!user) {
-        return Promise.reject(new Error(CREDENTIALS_ERROR));
+        throw new UnauthorizedError(CREDENTIALS_ERROR);
       }
 
       return bcrypt.compare(password, user.password)
         .then((matched) => {
           if (!matched) {
-            return Promise.reject(new Error(CREDENTIALS_ERROR));
+            throw new UnauthorizedError(CREDENTIALS_ERROR);
           }
 
           return user;

@@ -5,11 +5,13 @@ import Card from '../models/card';
 import { AuthContext } from '../types/auth';
 import BadRequestError from '../errors/bad-request-error';
 import NotFoundError from '../errors/not-found-error';
+import ForbiddenError from '../errors/forbidden-error';
 
 const CARD_NOT_FOUND_MESSAGE = 'Карточка с указанным _id не найдена.';
 const INVALID_CARD_DATA_MESSAGE = 'Переданы некорректные данные при создании карточки.';
 const UNLISTED_CARD_ID_MESSAGE = 'Передан несуществующий _id карточки.';
 const INVALID_LIKE_DATA_MESSAGE = 'Переданы некорректные данные для постановки/снятии лайка.';
+const NOT_ALLOWED_TO_DELETE_CARD = 'Недостаточно прав для удаления карточки';
 
 export const getCards = (_req:Request, res:Response, next: NextFunction) => Card.find({})
   .then((cards) => res.send(cards))
@@ -29,18 +31,27 @@ export const createCard = (req:Request, res:Response<unknown, AuthContext>, next
     });
 };
 
-export const deleteCard = (req:Request, res:Response, next: NextFunction) => {
+export const deleteCard = (req:Request, res:Response<unknown, AuthContext>, next: NextFunction) => {
+  const { user } = res.locals;
   const { cardId } = req.params;
 
-  Card.findByIdAndDelete({ _id: cardId })
+  Card.findById({ _id: cardId })
     .orFail()
-    .then((card) => res.send(card))
+    .then((card) => {
+      if (card.owner.toString() !== user._id) {
+        throw new ForbiddenError(NOT_ALLOWED_TO_DELETE_CARD);
+      }
+      return Card.deleteOne({ _id: card._id });
+    })
     .catch((error) => {
       if (error instanceof MongooseError.DocumentNotFoundError) {
         return next(new NotFoundError(CARD_NOT_FOUND_MESSAGE));
       }
       if (error instanceof MongooseError.CastError) {
         return next(new BadRequestError(error.message));
+      }
+      if (error instanceof ForbiddenError) {
+        return next(error);
       }
       return next(error);
     });

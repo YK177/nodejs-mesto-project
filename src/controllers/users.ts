@@ -3,10 +3,11 @@ import { Error as MongooseError } from 'mongoose';
 import bcrypt from 'bcrypt';
 import { constants } from 'http2';
 import jwt from 'jsonwebtoken';
-import User, { CREDENTIALS_ERROR, IUser } from '../models/user';
+import User, { IUser } from '../models/user';
 import NotFoundError from '../errors/not-found-error';
 import BadRequestError from '../errors/bad-request-error';
 import UnauthorizedError from '../errors/unauthorized-error';
+import { AuthContext } from '../types/auth';
 
 const USER_NOT_FOUND_MESSAGE = 'Пользователь по указанному _id не найден.';
 const INVALID_USER_DATA_MESSAGE = 'Переданы некорректные данные при создании пользователя.';
@@ -27,8 +28,8 @@ export const login = (req:Request<{}, {}, IUser>, res:Response, next: NextFuncti
       res.send(user);
     })
     .catch((error) => {
-      if (error.message === CREDENTIALS_ERROR) {
-        return next(new UnauthorizedError(CREDENTIALS_ERROR));
+      if (error instanceof UnauthorizedError) {
+        return next(error);
       }
       return next(error);
     });
@@ -77,12 +78,16 @@ export const createUser = async (req:Request<{}, {}, IUser>, res:Response, next:
     });
 };
 
-export const updateProfile = (req:Request, res:Response, next: NextFunction) => {
-  const userId = res.locals.user;
+export const updateProfile = (
+  req:Request,
+  res:Response<unknown, AuthContext>,
+  next: NextFunction,
+) => {
+  const { _id } = res.locals.user;
   const { name, about } = req.body;
 
   User
-    .findByIdAndUpdate(userId, { name, about }, { new: true, runValidators: true })
+    .findByIdAndUpdate({ _id }, { name, about }, { new: true, runValidators: true })
     .orFail()
     .then((user) => res.send(user))
     .catch((error) => {
@@ -99,12 +104,16 @@ export const updateProfile = (req:Request, res:Response, next: NextFunction) => 
     });
 };
 
-export const updateAvatar = (req:Request, res:Response, next: NextFunction) => {
-  const userId = res.locals.user;
+export const updateAvatar = (
+  req:Request,
+  res:Response<unknown, AuthContext>,
+  next: NextFunction,
+) => {
+  const { _id } = res.locals.user;
   const { avatar } = req.body;
 
   User
-    .findByIdAndUpdate(userId, { avatar }, { new: true, runValidators: true })
+    .findByIdAndUpdate({ _id }, { avatar }, { new: true, runValidators: true })
     .orFail()
     .then((user) => res.send(user))
     .catch((error) => {
