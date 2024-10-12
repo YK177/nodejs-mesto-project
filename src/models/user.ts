@@ -53,10 +53,19 @@ const userSchema = new Schema<IUserDocument>({
     },
     default: 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
   },
-}, { versionKey: false });
+}, {
+  versionKey: false,
+  toJSON: {
+    transform(_doc, ret) {
+      const { password: _, ...user } = ret;
+      return user;
+    },
+  },
+});
 
 userSchema.static('findUserByCredentials', async function findUserByCredentials(email: string, password: string) {
   return this.findOne({ email })
+    .select('+password')
     .then((user: IUser) => {
       if (!user) {
         throw new UnauthorizedError(CREDENTIALS_ERROR);

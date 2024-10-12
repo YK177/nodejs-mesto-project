@@ -8,9 +8,11 @@ import NotFoundError from '../errors/not-found-error';
 import BadRequestError from '../errors/bad-request-error';
 import UnauthorizedError from '../errors/unauthorized-error';
 import { AuthContext } from '../types/auth';
+import ConflictError from '../errors/conflict-error';
 
 const USER_NOT_FOUND_MESSAGE = 'Пользователь по указанному _id не найден.';
 const INVALID_USER_DATA_MESSAGE = 'Переданы некорректные данные при создании пользователя.';
+const EXISTED_USER_ERROR_MESSAGE = 'Пользователь с таким email уже зарегистрирован.';
 const SALT_ROUNDS = 10;
 const { SECRET_KEY = 'some-secret-key', TOKEN_EXPIRES_IN = '7d', COOKIE_EXPIRES_IN = 604800000 } = process.env;
 
@@ -71,6 +73,9 @@ export const createUser = async (req:Request<{}, {}, IUser>, res:Response, next:
       res.status(constants.HTTP_STATUS_CREATED).send(user);
     })
     .catch((error) => {
+      if (error instanceof Error && error.message.startsWith('E11000')) {
+        return next(new ConflictError(EXISTED_USER_ERROR_MESSAGE));
+      }
       if (error instanceof MongooseError.ValidationError) {
         return next(new BadRequestError(INVALID_USER_DATA_MESSAGE));
       }

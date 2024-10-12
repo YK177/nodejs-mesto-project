@@ -7,6 +7,7 @@ import errorHandler from './middleware/error-handler';
 import { createUser, login } from './controllers/users';
 import auth from './middleware/auth';
 import headerSchema from './validators/header-schema';
+import { errorLogger, requestLogger } from './middleware/logger';
 
 const { PORT = 3000, MONGO_URL = 'mongodb://127.0.0.1:27017/mydb' } = process.env;
 
@@ -14,11 +15,13 @@ const app = express();
 
 app.use(express.json());
 app.use(helmet());
+app.use(requestLogger);
 app.post('/signup', createUser);
 app.post('/signin', login);
 app.use(celebrate(headerSchema));
 app.use(auth);
 app.use(router);
+app.use(errorLogger);
 app.use(errors());
 app.use(errorHandler);
 
