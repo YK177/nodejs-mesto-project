@@ -1,12 +1,10 @@
 import { Router } from 'express';
 import { celebrate } from 'celebrate';
 import {
-  getUserById,
-  getUsers,
-  updateAvatar,
-  updateProfile,
+  getUserById, updateAvatar, updateProfile, getMe,
 } from '../controllers/users';
 import {
+
   getUserSchema,
   updateAvatarSchema,
   updateProfileSchema,
@@ -14,7 +12,7 @@ import {
 
 const usersRouter = Router();
 
-usersRouter.get('/', getUsers);
+usersRouter.get('/me', getMe);
 usersRouter.get('/:userId', celebrate(getUserSchema), getUserById);
 usersRouter.patch('/me', celebrate(updateProfileSchema), updateProfile);
 usersRouter.patch('/me/avatar', celebrate(updateAvatarSchema), updateAvatar);

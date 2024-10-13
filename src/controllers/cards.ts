@@ -12,7 +12,6 @@ const INVALID_CARD_DATA_MESSAGE = 'Переданы некорректные д�
 const UNLISTED_CARD_ID_MESSAGE = 'Передан несуществующий _id карточки.';
 const INVALID_LIKE_DATA_MESSAGE = 'Переданы некорректные данные для постановки/снятии лайка.';
 const NOT_ALLOWED_TO_DELETE_CARD = 'Недостаточно прав для удаления карточки';
-const CARD_DELETED_SUCCESSFULLY = 'Карточка удалена';
 
 export const getCards = (_req:Request, res:Response, next: NextFunction) => Card.find({})
   .then((cards) => res.send(cards))
@@ -44,7 +43,7 @@ export const deleteCard = (req:Request, res:Response<unknown, AuthContext>, next
       }
       return Card.deleteOne({ _id: card._id });
     })
-    .then(() => res.status(constants.HTTP_STATUS_NO_CONTENT).send(CARD_DELETED_SUCCESSFULLY))
+    .then(() => res.status(constants.HTTP_STATUS_NO_CONTENT).send())
     .catch((error) => {
       if (error instanceof MongooseError.DocumentNotFoundError) {
         return next(new NotFoundError(CARD_NOT_FOUND_MESSAGE));

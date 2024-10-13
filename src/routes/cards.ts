@@ -4,14 +4,12 @@ import {
   createCard,
   deleteCard,
   dislikeCard,
-  getCards,
   likeCard,
 } from '../controllers/cards';
 import { cardCommonActionsSchema, createCardSchema } from '../validators/cards';
 
 const cardsRouter = Router();
 
-cardsRouter.get('/', getCards);
 cardsRouter.post('/', celebrate(createCardSchema), createCard);
 cardsRouter.delete('/:cardId', celebrate(cardCommonActionsSchema), deleteCard);
 cardsRouter.put('/:cardId/likes', celebrate(cardCommonActionsSchema), likeCard);

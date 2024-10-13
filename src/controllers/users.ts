@@ -52,6 +52,16 @@ export const getUserById = (req:Request, res:Response, next: NextFunction) => {
     });
 };
 
+export const getMe = (_req:Request, res:Response<unknown, AuthContext>, next: NextFunction) => {
+  const { _id } = res.locals.user;
+
+  User
+    .findOne({ _id })
+    .orFail()
+    .then((user) => res.send(user))
+    .catch((error) => next(error));
+};
+
 export const createUser = async (req:Request<{}, {}, IUser>, res:Response, next: NextFunction) => {
   const {
     name, about, avatar, email, password,
