@@ -12,13 +12,14 @@ const INVALID_CARD_DATA_MESSAGE = 'Переданы некорректные д�
 const UNLISTED_CARD_ID_MESSAGE = 'Передан несуществующий _id карточки.';
 const INVALID_LIKE_DATA_MESSAGE = 'Переданы некорректные данные для постановки/снятии лайка.';
 const NOT_ALLOWED_TO_DELETE_CARD = 'Недостаточно прав для удаления карточки';
+const CARD_DELETED_SUCCESSFULLY = 'Карточка удалена';
 
 export const getCards = (_req:Request, res:Response, next: NextFunction) => Card.find({})
   .then((cards) => res.send(cards))
   .catch((error) => next(error));
 
 export const createCard = (req:Request, res:Response<unknown, AuthContext>, next: NextFunction) => {
-  const owner = res.locals.user;
+  const owner = res.locals.user._id;
   const { name, link } = req.body;
 
   Card.create({ name, link, owner })
@@ -43,6 +44,7 @@ export const deleteCard = (req:Request, res:Response<unknown, AuthContext>, next
       }
       return Card.deleteOne({ _id: card._id });
     })
+    .then(() => res.status(constants.HTTP_STATUS_NO_CONTENT).send(CARD_DELETED_SUCCESSFULLY))
     .catch((error) => {
       if (error instanceof MongooseError.DocumentNotFoundError) {
         return next(new NotFoundError(CARD_NOT_FOUND_MESSAGE));
@@ -50,19 +52,16 @@ export const deleteCard = (req:Request, res:Response<unknown, AuthContext>, next
       if (error instanceof MongooseError.CastError) {
         return next(new BadRequestError(error.message));
       }
-      if (error instanceof ForbiddenError) {
-        return next(error);
-      }
       return next(error);
     });
 };
 
 export const likeCard = (req:Request, res:Response<unknown, AuthContext>, next: NextFunction) => {
-  const { user } = res.locals;
+  const userId = res.locals.user._id;
   const { cardId } = req.params;
 
   Card
-    .findByIdAndUpdate(cardId, { $addToSet: { likes: user } }, { new: true })
+    .findByIdAndUpdate(cardId, { $addToSet: { likes: userId } }, { new: true })
     .orFail()
     .then((card) => res.send(card))
     .catch((error) => {
@@ -84,11 +83,11 @@ export const dislikeCard = (
   res:Response<unknown, AuthContext>,
   next: NextFunction,
 ) => {
-  const { user } = res.locals;
+  const userId = res.locals.user._id;
   const { cardId } = req.params;
 
   Card
-    .findByIdAndUpdate(cardId, { $pull: { likes: user._id } }, { new: true })
+    .findByIdAndUpdate(cardId, { $pull: { likes: userId } }, { new: true })
     .orFail()
     .then((card) => res.send(card))
     .catch((error) => {

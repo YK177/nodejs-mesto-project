@@ -6,7 +6,6 @@ import jwt from 'jsonwebtoken';
 import User, { IUser } from '../models/user';
 import NotFoundError from '../errors/not-found-error';
 import BadRequestError from '../errors/bad-request-error';
-import UnauthorizedError from '../errors/unauthorized-error';
 import { AuthContext } from '../types/auth';
 import ConflictError from '../errors/conflict-error';
 
@@ -29,12 +28,7 @@ export const login = (req:Request<{}, {}, IUser>, res:Response, next: NextFuncti
       });
       res.send(user);
     })
-    .catch((error) => {
-      if (error instanceof UnauthorizedError) {
-        return next(error);
-      }
-      return next(error);
-    });
+    .catch((error) => next(error));
 };
 
 export const getUsers = (_req:Request, res:Response, next: NextFunction) => User.find({})
